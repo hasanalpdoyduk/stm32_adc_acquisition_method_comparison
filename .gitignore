@@ -1,5 +1,14 @@
-.pio
+# PlatformIO build output and cached libraries
+.pio/
+
+# VS Code generated files (machine-specific, not project config)
 .vscode/.browse.c_cpp.db*
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+
+# Claude Code project instructions (tooling-specific, not for reviewers)
+CLAUDE.md
+
+# macOS metadata
+.DS_Store
