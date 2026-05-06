@@ -6,6 +6,7 @@
 #include "config.h"
 #include "profiler.h"
 #include "uart_debug.h"
+#include "adc_polling.h"
 
 static void SystemClock_Config(void)
 {
@@ -52,10 +53,18 @@ int main(void)
     SystemClock_Config();
     profiler_init();
     uart_init();
+    adc_polling_init();
 
     while (1)
     {
+        profiler_start();
+        uint16_t result = adc_polling_read();
+        uint32_t cycles = profiler_stop();
+
+        uart_print("POLLING result=");
+        uart_print_uint(result);
+        uart_print(" cycles=");
+        uart_print_uint(cycles);
+        uart_println("");
     }
 }
-
-
