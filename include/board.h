@@ -15,8 +15,8 @@
 // CPU frequency in Hz. STM32F407 maximum is 168 MHz
 #define SYS_CLOCK_HZ    168000000UL
 
-// APB1 bus frequency: 16 MHz when running on default HSI (no PLL)
-#define APB1_CLK_HZ     16000000U
+// APB1 bus frequency: 42 MHz (HCLK 168 MHz, APB1 prescaler /4)
+#define APB1_CLK_HZ     42000000U
 
 // ADC1 channel connected to PA1
 #define ADC_CHANNEL     1
