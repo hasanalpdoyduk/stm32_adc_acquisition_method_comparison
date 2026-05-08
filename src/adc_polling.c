@@ -29,4 +29,3 @@ uint16_t adc_polling_read(void)
     while (!(ADC1->SR & ADC_SR_EOC));  // wait for conversion to complete
     return (uint16_t)(ADC1->DR);  // read result (clears EOC flag)
 }
-
