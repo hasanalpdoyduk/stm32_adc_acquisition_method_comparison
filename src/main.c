@@ -7,6 +7,7 @@
 #include "profiler.h"
 #include "uart_debug.h"
 #include "adc_polling.h"
+#include "adc_interrupt.h"
 
 static void SystemClock_Config(void)
 {
@@ -54,17 +55,29 @@ int main(void)
     profiler_init();
     uart_init();
     adc_polling_init();
+    adc_interrupt_init();
 
     while (1)
     {
         profiler_start();
-        uint16_t result = adc_polling_read();
-        uint32_t cycles = profiler_stop();
-
+        uint16_t adc_polling_result = adc_polling_read();
+        uint32_t adc_polling_cycles = profiler_stop();
         uart_print("POLLING result=");
-        uart_print_uint(result);
+        uart_print_uint(adc_polling_result);
         uart_print(" cycles=");
-        uart_print_uint(cycles);
+        uart_print_uint(adc_polling_cycles);
         uart_println("");
+
+        adc_interrupt_done = 0;
+        profiler_start();
+        adc_interrupt_start();
+        while (!adc_interrupt_done);
+        uint32_t adc_interrupt_cycles = profiler_stop();
+        uart_print("INTERRUPT result=");
+        uart_print_uint(adc_interrupt_result);
+        uart_print(" cycles=");
+        uart_print_uint(adc_interrupt_cycles);
+        uart_println("");
+
     }
 }
