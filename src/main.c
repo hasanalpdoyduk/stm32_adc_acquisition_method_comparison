@@ -8,6 +8,7 @@
 #include "uart_debug.h"
 #include "adc_polling.h"
 #include "adc_interrupt.h"
+#include "adc_dma.h"
 
 static void SystemClock_Config(void)
 {
@@ -56,6 +57,7 @@ int main(void)
     uart_init();
     adc_polling_init();
     adc_interrupt_init();
+    adc_dma_init();
 
     while (1)
     {
@@ -79,5 +81,16 @@ int main(void)
         uart_print_uint(adc_interrupt_cycles);
         uart_println("");
 
+        adc_dma_done = 0;
+        profiler_start();
+        adc_dma_start();
+        while (!adc_dma_done);
+        uint32_t adc_dma_cycles = profiler_stop();
+        uart_print("DMA result=");
+        uart_print_uint(adc_dma_result);
+        uart_print(" cycles=");
+        uart_print_uint(adc_dma_cycles);
+        uart_println("");
+    
     }
 }
