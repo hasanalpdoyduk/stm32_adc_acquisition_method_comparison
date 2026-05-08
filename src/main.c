@@ -9,6 +9,7 @@
 #include "adc_polling.h"
 #include "adc_interrupt.h"
 #include "adc_dma.h"
+#include "filters.h"
 
 static void SystemClock_Config(void)
 {
@@ -61,6 +62,17 @@ int main(void)
 
     volatile uint32_t bg_counter;
 
+    MovingAvgFilter polling_ma_f, interrupt_ma_f, dma_ma_f;
+    FirFilter       polling_fir_f, interrupt_fir_f, dma_fir_f;
+    uint16_t        polling_iir_prev = 0, interrupt_iir_prev = 0, dma_iir_prev = 0;
+
+    moving_avg_init(&polling_ma_f);
+    moving_avg_init(&interrupt_ma_f);
+    moving_avg_init(&dma_ma_f);
+    fir_init(&polling_fir_f);
+    fir_init(&interrupt_fir_f);
+    fir_init(&dma_fir_f);
+
     while (1)
     {
         bg_counter = 0;
@@ -81,6 +93,33 @@ int main(void)
         uart_print_uint(bg_counter);
         uart_println("");
 
+        profiler_start();
+        uint16_t polling_ma = moving_avg_update(&polling_ma_f, adc_polling_result);
+        uint32_t polling_ma_cycles = profiler_stop();
+        uart_print("POLLING ma=");
+        uart_print_uint(polling_ma);
+        uart_print(" cycles=");
+        uart_print_uint(polling_ma_cycles);
+        uart_println("");
+
+        profiler_start();
+        polling_iir_prev = iir_update(adc_polling_result, polling_iir_prev);
+        uint32_t polling_iir_cycles = profiler_stop();
+        uart_print("POLLING iir=");
+        uart_print_uint(polling_iir_prev);
+        uart_print(" cycles=");
+        uart_print_uint(polling_iir_cycles);
+        uart_println("");
+
+        profiler_start();
+        uint16_t polling_fir = fir_update(&polling_fir_f, adc_polling_result);
+        uint32_t polling_fir_cycles = profiler_stop();
+        uart_print("POLLING fir=");
+        uart_print_uint(polling_fir);
+        uart_print(" cycles=");
+        uart_print_uint(polling_fir_cycles);
+        uart_println("");
+
         bg_counter = 0;
         adc_interrupt_done = 0;
         profiler_start();
@@ -96,6 +135,33 @@ int main(void)
         uart_print_uint(bg_counter);
         uart_println("");
 
+        profiler_start();
+        uint16_t interrupt_ma = moving_avg_update(&interrupt_ma_f, adc_interrupt_result);
+        uint32_t interrupt_ma_cycles = profiler_stop();
+        uart_print("INTERRUPT ma=");
+        uart_print_uint(interrupt_ma);
+        uart_print(" cycles=");
+        uart_print_uint(interrupt_ma_cycles);
+        uart_println("");
+
+        profiler_start();
+        interrupt_iir_prev = iir_update(adc_interrupt_result, interrupt_iir_prev);
+        uint32_t interrupt_iir_cycles = profiler_stop();
+        uart_print("INTERRUPT iir=");
+        uart_print_uint(interrupt_iir_prev);
+        uart_print(" cycles=");
+        uart_print_uint(interrupt_iir_cycles);
+        uart_println("");
+
+        profiler_start();
+        uint16_t interrupt_fir = fir_update(&interrupt_fir_f, adc_interrupt_result);
+        uint32_t interrupt_fir_cycles = profiler_stop();
+        uart_print("INTERRUPT fir=");
+        uart_print_uint(interrupt_fir);
+        uart_print(" cycles=");
+        uart_print_uint(interrupt_fir_cycles);
+        uart_println("");
+
         bg_counter = 0;
         adc_dma_done = 0;
         profiler_start();
@@ -109,6 +175,33 @@ int main(void)
         uart_print_uint(adc_dma_cycles);
         uart_print(" bg=");
         uart_print_uint(bg_counter);
+        uart_println("");
+
+        profiler_start();
+        uint16_t dma_ma = moving_avg_update(&dma_ma_f, adc_dma_result);
+        uint32_t dma_ma_cycles = profiler_stop();
+        uart_print("DMA ma=");
+        uart_print_uint(dma_ma);
+        uart_print(" cycles=");
+        uart_print_uint(dma_ma_cycles);
+        uart_println("");
+
+        profiler_start();
+        dma_iir_prev = iir_update(adc_dma_result, dma_iir_prev);
+        uint32_t dma_iir_cycles = profiler_stop();
+        uart_print("DMA iir=");
+        uart_print_uint(dma_iir_prev);
+        uart_print(" cycles=");
+        uart_print_uint(dma_iir_cycles);
+        uart_println("");
+
+        profiler_start();
+        uint16_t dma_fir = fir_update(&dma_fir_f, adc_dma_result);
+        uint32_t dma_fir_cycles = profiler_stop();
+        uart_print("DMA fir=");
+        uart_print_uint(dma_fir);
+        uart_print(" cycles=");
+        uart_print_uint(dma_fir_cycles);
         uart_println("");
     }
 }
