@@ -59,38 +59,56 @@ int main(void)
     adc_interrupt_init();
     adc_dma_init();
 
+    volatile uint32_t bg_counter;
+
     while (1)
     {
+        bg_counter = 0;
+        adc_polling_done = 0;
         profiler_start();
-        uint16_t adc_polling_result = adc_polling_read();
+        adc_polling_start();
+        while (!adc_polling_done)
+        {
+            adc_polling_poll();
+            bg_counter++;
+        }
         uint32_t adc_polling_cycles = profiler_stop();
         uart_print("POLLING result=");
         uart_print_uint(adc_polling_result);
         uart_print(" cycles=");
         uart_print_uint(adc_polling_cycles);
+        uart_print(" bg=");
+        uart_print_uint(bg_counter);
         uart_println("");
 
+        bg_counter = 0;
         adc_interrupt_done = 0;
         profiler_start();
         adc_interrupt_start();
-        while (!adc_interrupt_done);
+        while (!adc_interrupt_done)
+            bg_counter++;
         uint32_t adc_interrupt_cycles = profiler_stop();
         uart_print("INTERRUPT result=");
         uart_print_uint(adc_interrupt_result);
         uart_print(" cycles=");
         uart_print_uint(adc_interrupt_cycles);
+        uart_print(" bg=");
+        uart_print_uint(bg_counter);
         uart_println("");
 
+        bg_counter = 0;
         adc_dma_done = 0;
         profiler_start();
         adc_dma_start();
-        while (!adc_dma_done);
+        while (!adc_dma_done)
+            bg_counter++;
         uint32_t adc_dma_cycles = profiler_stop();
         uart_print("DMA result=");
         uart_print_uint(adc_dma_result);
         uart_print(" cycles=");
         uart_print_uint(adc_dma_cycles);
+        uart_print(" bg=");
+        uart_print_uint(bg_counter);
         uart_println("");
-    
     }
 }

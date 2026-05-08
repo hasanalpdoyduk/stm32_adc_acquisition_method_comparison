@@ -23,9 +23,20 @@ void adc_polling_init(void)
     ADC1->CR2 |= ADC_CR2_ADON;  // enable ADC
 }
 
-uint16_t adc_polling_read(void)
+volatile uint16_t adc_polling_result;
+volatile uint8_t  adc_polling_done;
+
+void adc_polling_start(void)
 {
-    ADC1->CR2 |= ADC_CR2_SWSTART;  // start conversion
-    while (!(ADC1->SR & ADC_SR_EOC));  // wait for conversion to complete
-    return (uint16_t)(ADC1->DR);  // read result (clears EOC flag)
+    adc_polling_done = 0;
+    ADC1->CR2 |= ADC_CR2_SWSTART;
+}
+
+void adc_polling_poll(void)
+{
+    if (ADC1->SR & ADC_SR_EOC)
+    {
+        adc_polling_result = (uint16_t)ADC1->DR;
+        adc_polling_done = 1;
+    }
 }
