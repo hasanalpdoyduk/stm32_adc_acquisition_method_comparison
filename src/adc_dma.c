@@ -2,9 +2,8 @@
  * @file    adc_dma.c
  * @brief   ADC1 DMA mode implementation.
  *
- * Configures PA1 as analog input, sets up DMA2 Stream0 Channel0 to transfer
- * the ADC result directly to adc_dma_result in RAM, and signals completion
- * via DMA2_Stream0_IRQHandler.
+ * Configures PA1 as analog input and sets up DMA2 Stream0 Channel0 addresses.
+ * DMA/DDS bits are set per-conversion in adc_dma_start() and cleared in the ISR.
  */
 
 #include "adc_dma.h"
@@ -24,7 +23,6 @@ void adc_dma_init(void)
     ADC1->SQR3 |= 1U;  // convert channel 1 first in sequence
     ADC1->SMPR2 &= ~ADC_SMPR2_SMP1;
     ADC1->SMPR2 |= ADC_SMPR2_SMP1_2;  // 84 cycles
-    ADC1->CR2 |= ADC_CR2_DMA | ADC_CR2_DDS;  // enable DMA, reissue on each conversion
     ADC1->CR2 |= ADC_CR2_ADON;  // enable ADC
 
     DMA2_Stream0->CR = (0U << DMA_SxCR_CHSEL_Pos)  // channel 0
@@ -45,6 +43,7 @@ void adc_dma_start(void)
     adc_dma_done = 0;  // reset completion flag
     DMA2_Stream0->NDTR = 1;
     DMA2_Stream0->CR |= DMA_SxCR_EN;
+    ADC1->CR2 |= ADC_CR2_DMA | ADC_CR2_DDS;  // enable DMA, reissue on each conversion
     ADC1->CR2 |= ADC_CR2_SWSTART;
 }
 
@@ -53,6 +52,7 @@ void DMA2_Stream0_IRQHandler(void)
     if (DMA2->LISR & DMA_LISR_TCIF0)  // check transfer complete flag for Stream0
     {
         DMA2->LIFCR |= DMA_LIFCR_CTCIF0;  // clear the flag
+        ADC1->CR2 &= ~(ADC_CR2_DMA | ADC_CR2_DDS);  // disable DMA until next conversion
         adc_dma_done = 1;  // signal that conversion result is ready in adc_dma_result
     }
 }
