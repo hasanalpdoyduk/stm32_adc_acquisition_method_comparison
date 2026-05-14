@@ -2,7 +2,6 @@
 
 A bare-metal CMSIS benchmark on the STM32F407VG-DISC1 that compares three ADC acquisition methods and three digital filters using DWT cycle counters. Results are streamed over UART at 115200 baud.
 
----
 
 ## Hardware
 
@@ -15,9 +14,9 @@ A bare-metal CMSIS benchmark on the STM32F407VG-DISC1 that compares three ADC ac
 | Framework | CMSIS (bare-metal, no HAL) |
 | Build tool | PlatformIO |
 
-> **UART note:** The on-board ST-Link on the DISC1 does **not** provide a UART bridge (unlike Nucleo boards). An external USB-UART adapter (CP2102 or FT232) is required. Connect STM32 PA2 → adapter RX and STM32 GND → adapter GND.
+**UART note:** The on-board ST-Link on the DISC1 does **not** provide a UART bridge (unlike Nucleo boards). An external USB-UART adapter (CP2102 or FT232) is required. Connect STM32 PA2 → adapter RX and STM32 GND → adapter GND.
 
-> **ADC input note:** A 10 kΩ potentiometer was used for testing. Connect the wiper to PA1, one end to the board's **3V3** pin, and the other end to GND. Do **not** use 5 V — the ADC input is 3.3 V tolerant only.
+**ADC input note:** A 10 kΩ potentiometer was used for testing. Connect the wiper to PA1, one end to the board's **3V3** pin, and the other end to GND. Do **not** use 5 V — the ADC input is 3.3 V tolerant only.
 
 ---
 
@@ -84,7 +83,6 @@ A symmetric FIR filter with Hamming-windowed coefficients `[4, 14, 39, 72, 72, 3
 output = Σ (coeff[i] × x[n-i]) / 258
 ```
 
----
 
 ## Benchmark Results
 
@@ -129,7 +127,6 @@ DMA       iir=354     cycles=22
 DMA       fir=356     cycles=167
 ```
 
----
 
 ## Build and Flash
 
@@ -146,7 +143,6 @@ pio run --target upload
 pio device monitor --baud 115200
 ```
 
----
 
 ## Clock Configuration
 
