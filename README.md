@@ -1,7 +1,12 @@
 # STM32 ADC Acquisition Methods and Filters Benchmark
 
-A bare-metal CMSIS benchmark on the STM32F407VG-DISC1 that compares three ADC acquisition methods and three digital filters using DWT cycle counters. Results are streamed over UART at 115200 baud.
+Bare-metal CMSIS benchmark on the STM32F407VG-DISC1 comparing three ADC acquisition strategies and three digital filter algorithms using hardware DWT cycle counters. Results streamed over UART at 115200 baud.
 
+## Motivation
+
+Choosing the wrong ADC acquisition method for a real-time embedded system is a common source of CPU overload and missed deadlines. This project quantifies the tradeoffs experimentally — not just theoretically — giving concrete cycle counts and CPU availability measurements at 168 MHz.
+
+**Core question:** *For a given sampling rate, which acquisition method and filter combination gives the best noise rejection for the lowest CPU cost?*
 
 ## Hardware
 
@@ -18,32 +23,6 @@ A bare-metal CMSIS benchmark on the STM32F407VG-DISC1 that compares three ADC ac
 
 **ADC input note:** A 10 kΩ potentiometer was used for testing. Connect the wiper to PA1, one end to the board's **3V3** pin, and the other end to GND. Do **not** use 5 V — the ADC input is 3.3 V tolerant only.
 
----
-
-## Project Structure
-
-```
-include/
-  board.h          chip include, pin definitions, clock constants (APB1 = 42 MHz)
-  config.h         project-level constants (buffer size, filter params); includes board.h
-  profiler.h       DWT cycle counter API
-  uart_debug.h     USART2 print utilities
-  adc_polling.h    polling-mode ADC API
-  adc_interrupt.h  interrupt-mode ADC API
-  adc_dma.h        DMA-mode ADC API
-  filters.h        MovingAvgFilter / FirFilter structs + filter function signatures
-
-src/
-  main.c           benchmark loop: acquires, filters, and prints cycle counts over UART
-  profiler.c       DWT init and start/stop helpers
-  uart_debug.c     USART2 init, uart_print / uart_print_uint / uart_println
-  adc_polling.c    ADC1 single-conversion, CPU polls CR2.EOC
-  adc_interrupt.c  ADC1 with EOCIE; result captured in EOC ISR
-  adc_dma.c        ADC1 with DMA2 Stream 0; result written directly to RAM
-  filters.c        moving_avg_update, iir_update, fir_update implementations
-```
-
----
 
 ## ADC Acquisition Methods
 
@@ -56,7 +35,6 @@ The CPU starts a conversion and returns to the main loop. When the conversion fi
 ### DMA
 The CPU starts a conversion and the DMA controller transfers the result directly from the ADC data register to a RAM variable — no CPU involvement at all. The DMA fires an interrupt on transfer complete.
 
----
 
 ## Digital Filters
 
@@ -105,10 +83,11 @@ Measured on hardware at 168 MHz system clock. Cycle counts are from the DWT cycl
 | Filter | Cycles | Notes |
 |--------|--------|-------|
 | IIR | 36 | Fastest — one multiply and a shift |
-| Moving Average | 106 | 8-element accumulation loop |
-| FIR | ~165 | 8 multiplications + accumulation |
+| Moving Average | 106 | 8-element circular buffer accumulation |
+| FIR (Hamming) | ~165 | 8 multiplications + accumulation, best frequency response |
 
-Each filter is benchmarked independently per ADC method with its own filter state, so results are not cross-contaminated.
+Each filter is benchmarked independently per acquisition method with its own filter state — results are not cross-contaminated.
+
 
 ### Sample UART Output
 
@@ -128,7 +107,45 @@ DMA       fir=356     cycles=167
 ```
 
 
-## Build and Flash
+## Clock Configuration
+
+```
+HSI (16 MHz) → PLL → SYSCLK 168 MHz
+  AHB  ÷1  → 168 MHz  (CPU, DMA, DWT)
+  APB1 ÷4  →  42 MHz  (USART2)
+  APB2 ÷2  →  84 MHz  (ADC1)
+```
+
+Flash latency set to 5 wait states before PLL enable, as required at 168 MHz.
+
+
+
+## Project Structure
+
+```
+STM32_ADC_Acquisition_Methods_and_Filters_Benchmark/
+├── include/
+│   ├── board.h          # Chip include, pin definitions, clock constants
+│   ├── config.h         # Buffer size, filter params
+│   ├── profiler.h       # DWT cycle counter API
+│   ├── uart_debug.h     # USART2 print utilities
+│   ├── adc_polling.h    # Polling-mode ADC API
+│   ├── adc_interrupt.h  # Interrupt-mode ADC API
+│   ├── adc_dma.h        # DMA-mode ADC API
+│   └── filters.h        # Filter structs and function signatures
+├── src/
+│   ├── main.c           # Benchmark loop — acquire, filter, print over UART
+│   ├── profiler.c       # DWT init and start/stop helpers
+│   ├── uart_debug.c     # USART2 init, uart_print / uart_println
+│   ├── adc_polling.c    # ADC1 single-conversion, CPU polls CR2.EOC
+│   ├── adc_interrupt.c  # ADC1 with EOCIE, result captured in EOC ISR
+│   ├── adc_dma.c        # ADC1 with DMA2 Stream 0, result written to RAM
+│   └── filters.c        # moving_avg_update, iir_update, fir_update
+└── README.md
+```
+
+
+## Build & Flash
 
 Prerequisites: [PlatformIO](https://platformio.org/) with the `ststm32` platform installed.
 
@@ -144,13 +161,12 @@ pio device monitor --baud 115200
 ```
 
 
-## Clock Configuration
+## About
 
-```
-HSI (16 MHz) → PLL → SYSCLK 168 MHz
-  AHB  ÷1  → 168 MHz  (CPU, DMA, DWT)
-  APB1 ÷4  →  42 MHz  (USART2)
-  APB2 ÷2  →  84 MHz  (ADC1)
-```
+- [Hasan Alp Doyduk](https://www.github.com/hasanalpdoyduk)
 
-Flash latency is set to 5 wait states before the PLL is enabled, as required at 168 MHz.
+
+
+
+
+
